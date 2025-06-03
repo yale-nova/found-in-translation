@@ -1,0 +1,6 @@
+*.csv
+*.bin
+*.json
+*.pkl
+*.bk.*
+*.pdf
