@@ -1,4 +1,6 @@
 import os
+import sys
+import argparse
 import pandas as pd
 import pickle
 import seaborn as sns
@@ -10,9 +12,6 @@ from sklearn.model_selection import train_test_split
 import warnings # to suppress FutureWarnings from seaborn
  
 warnings.filterwarnings("ignore", category=FutureWarning, module="seaborn")
-
-PLOT_DIR = 'plots'
-DATA_DIR = 'data'
 
 # parameters from IHOP
 SHUFFLE_SEED = 0
@@ -157,7 +156,7 @@ def plot_normed_cdf(df_label_lst, xlabel="Normalized hamming distance", fname='h
     ax.set_xlabel(xlabel)
     ax.legend(loc=legend_loc, bbox_to_anchor=xy_shift)
     fig.savefig(fname, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 def plot_normed_cdf_grid(df_label_lst_by_app, titles=None, xlabel="Normalized hamming distance", fname='all-hamming-norm.pdf', colname='hamming_norm'):
     """
@@ -185,7 +184,7 @@ def plot_normed_cdf_grid(df_label_lst_by_app, titles=None, xlabel="Normalized ha
         if idx == 1:
             ax.legend()
     fig.savefig(fname, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 def plot_errs_grid(infile_tups, outfile_name='all-fpfn-hamming-norm.pdf'):
     """
@@ -222,7 +221,7 @@ def plot_errs_grid(infile_tups, outfile_name='all-fpfn-hamming-norm.pdf'):
         if idx == 1:
             ax.legend(loc='lower center')
     fig.savefig(outfile_name, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 def plot_durations_grid(dfs, filename, titles=None, cdf=False, nbins=50, binwidth=None):
     """
@@ -257,7 +256,7 @@ def plot_durations_grid(dfs, filename, titles=None, cdf=False, nbins=50, binwidt
         if titles is not None and i < len(titles):
             ax.set_title(titles[i], fontweight='bold')
     plt.savefig(filename, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 def get_results_path(app, fname):
     eval_path = os.path.join(DATA_DIR, app, 'eval', fname)
@@ -269,25 +268,23 @@ def get_results_path(app, fname):
     return fallback_path
 
 
-if __name__ == "__main__":
-    os.makedirs(PLOT_DIR, exist_ok=True)
-    
+def plot_fig7(file_ext, DATA_DIR, PLOT_DIR):
     print('\nPlotting Fig. 7: Hamming distance CDFs for all attacks...')
-    filename = os.path.join(PLOT_DIR, 'fig7-all-hamming-norm.pdf')
+    filename = os.path.join(PLOT_DIR, 'fig7-all-hamming-norm' + file_ext)
 
-    dlrm_nitro = pd.read_csv(os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_test.csv'))
+    dlrm_nitro = pd.read_csv(os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_nitro.csv'))
     add_cols(dlrm_nitro)
 
     dlrm_sgx = pd.read_csv(os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_sgx.csv'))
     add_cols(dlrm_sgx)
 
-    hnsw_nitro = pd.read_csv(os.path.join(DATA_DIR, 'hnsw', 'eval', 'hnsw_all.csv'))
+    hnsw_nitro = pd.read_csv(os.path.join(DATA_DIR, 'hnsw', 'eval', 'hnsw_nitro.csv'))
     add_seqlen(hnsw_nitro)
 
     hnsw_sgx = pd.read_csv(os.path.join(DATA_DIR, 'hnsw', 'eval', 'hnsw_sgx.csv'))
     add_seqlen(hnsw_sgx)
 
-    llm_nitro = pd.read_csv(os.path.join(DATA_DIR, 'llm', 'eval', 'llm_all.csv'))
+    llm_nitro = pd.read_csv(os.path.join(DATA_DIR, 'llm', 'eval', 'llm_nitro.csv'))
     add_seqlen(llm_nitro)
 
     llm_sgx = pd.read_csv(os.path.join(DATA_DIR, 'llm', 'eval', 'llm_sgx.csv'))
@@ -339,9 +336,9 @@ if __name__ == "__main__":
     plot_normed_cdf_grid(grid_inputs, titles=['DLRM', 'LLM', 'HNSW'], xlabel="Normalized hamming distance", fname=filename, colname='hamming_norm')
     print(f"Saved plot to {filename}.")
 
-    #############
+def plot_fig8(file_ext, DATA_DIR, PLOT_DIR):
     print('\nPlotting Fig. 8: Hamming distance CDFs for DLRM with 1-1 page-object mappings...')
-    filename = os.path.join(PLOT_DIR, 'fig8-dlrm-1-1-hamming-norm.pdf')
+    filename = os.path.join(PLOT_DIR, 'fig8-dlrm-1-1-hamming-norm' + file_ext)
 
     df1_1 = pd.read_csv(os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_1_1.csv'))
     add_cols(df1_1)
@@ -351,7 +348,7 @@ if __name__ == "__main__":
     
     nb_eval_path = get_results_path('dlrm', 'nb_dlrm_1_1.csv')
     nb_1_1 = pd.read_csv(nb_eval_path)
-    add_cols(nb_dlrm, colname='idx')
+    add_cols(nb_1_1, colname='idx')
 
     add_hamming_norm(ih_1_1, is_dlrm=True)
     add_hamming_norm(nb_1_1, is_dlrm=True)
@@ -360,21 +357,21 @@ if __name__ == "__main__":
     plot_normed_cdf(lst_1_1, fname=filename, legend_loc='lower center', xy_shift=(0.45, 0))
     print(f"Saved plot to {filename}.")
 
-    #############
+def plot_fig9(file_ext, DATA_DIR, PLOT_DIR):
     print('\nPlotting Fig. 9: Hamming distance CDFs with error rates in page trace...')
-    filename = os.path.join(PLOT_DIR, 'fig9-all-fpfn-hamming-norm.pdf')
+    filename = os.path.join(PLOT_DIR, 'fig9-all-fpfn-hamming-norm' + file_ext)
     
     err_grid_inputs = [
-        (os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_error_traces_err'), '.csv', 'DLRM'),
-        (os.path.join(DATA_DIR, 'llm', 'eval', 'llm_error_traces_err'), '.csv', 'LLM'),
-        (os.path.join(DATA_DIR, 'hnsw', 'eval', 'hnsw_error_traces_err'), '.csv', 'HNSW'),   
+        (os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_err'), '.csv', 'DLRM'),
+        (os.path.join(DATA_DIR, 'llm', 'eval', 'llm_err'), '.csv', 'LLM'),
+        (os.path.join(DATA_DIR, 'hnsw', 'eval', 'hnsw_err'), '.csv', 'HNSW'),   
     ]
     plot_errs_grid(err_grid_inputs, outfile_name=filename)
     print(f"Saved plot to {filename}.")
 
-    #############
+def plot_fig10(file_ext, DATA_DIR, PLOT_DIR):
     print('\nPlotting Fig. 10: Inference request duration CDFs...')
-    filename = os.path.join(PLOT_DIR, 'fig10-all-latency-overhead.pdf')
+    filename = os.path.join(PLOT_DIR, 'fig10-all-latency-overhead' + file_ext)
     
     times_dlrm = pd.read_csv(os.path.join(DATA_DIR, 'dlrm', 'times.csv'))
     times_llm = pd.read_csv(os.path.join(DATA_DIR, 'llm', 'times.csv'))
@@ -384,5 +381,37 @@ if __name__ == "__main__":
    
     plot_durations_grid(grid_inputs, filename, titles=grid_titles, cdf=True, binwidth=0.02)
     print(f"Saved plot to {filename}.")
+
+if __name__ == "__main__":
+    # command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--file-ext", type=str, default=".pdf", help="File extension to plot (e.g., .pdf, .png)")
+    parser.add_argument("--data-dir", type=str, default='data', help="Directory containing data files")
+    parser.add_argument("--plot-dir", type=str, default='plots', help="Directory to save plots")
+    parser.add_argument("--fig", type=int, help="Figure number to plot. If not specified, all figures will be plotted.")
+    args = parser.parse_args(sys.argv[1:])
+    
+    DATA_DIR = args.data_dir
+    PLOT_DIR = args.plot_dir
+    
+    os.makedirs(PLOT_DIR, exist_ok=True)
+    
+    if args.fig is not None:
+        match args.fig:
+            case 7:
+                plot_fig7(args.file_ext, DATA_DIR, PLOT_DIR)
+            case 8:
+                plot_fig8(args.file_ext, DATA_DIR, PLOT_DIR)
+            case 9:
+                plot_fig9(args.file_ext, DATA_DIR, PLOT_DIR)
+            case 10:
+                plot_fig10(args.file_ext, DATA_DIR, PLOT_DIR)
+            case _:
+                print(f"Unknown figure number: {args.fig}")
+    else:
+        plot_fig7(args.file_ext, DATA_DIR, PLOT_DIR)
+        plot_fig8(args.file_ext, DATA_DIR, PLOT_DIR)
+        plot_fig9(args.file_ext, DATA_DIR, PLOT_DIR)
+        plot_fig10(args.file_ext, DATA_DIR, PLOT_DIR)
 
     print('Done!')
