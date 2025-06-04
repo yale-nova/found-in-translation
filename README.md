@@ -40,16 +40,18 @@ LLM and HNSW have similar subdirectory structures to DLRM. `all.csv` and `sgx.cs
 
 ## Tested Configurations
 We have run our experiments on the following system configurations:
+
 **CPU setup**
 - Hardware: AMD EPYC 7302P 16/24-Core Processor
 - OS: Ubuntu 22.04.2 LTS
+
 **GPU setup (for our attack)**
 - Hardware: NVIDIA GeForce RTX 4090
 - OS: Ubuntu 24.04.1 LTS
 
-Given these setups, the following table summarizes the main results in our paper and the estimated time needed to sequentially run all the experiments for those results.
+Given these setups, the following table summarizes the main results in our paper and the estimated time needed to sequentially run all the experiments for those results. Times for Attack Efficacy are itemized by attack: our attack (FiT), IHOP, and Naive Bayes (NB).
 
-| Experiment Name / Section | Related Figures  | Estimated Time on GPU <br> (FiT + IHOP + Naive Bayes) | Estimated Time on CPU <br> (FiT + IHOP + Naive Bayes)|
+| Experiment Name / Section | Related Figures  | Estimated Time on GPU <br> (FiT + IHOP + NB) | Estimated Time on CPU <br> (FiT + IHOP + NB)|
 |---------------------------|------------------|------------------------|------------------------|
 | Attack Efficacy           | Fig. 7, Fig. 8    | 3h + 56h + 1.5h = 60.5h     |  68h + 56h + 1.5h = 125.5h   |
 | Practical Considerations  | Fig. 9, Fig. 10   |     6.5h     |    115.5h    |
