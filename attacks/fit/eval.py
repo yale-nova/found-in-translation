@@ -12,7 +12,6 @@ import os.path
 from utils import get_vocab, process_for_model, tensor_detokenize
 
 logging.set_verbosity_error()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SHUFFLE_SEED = 0
 
 # command line arguments
@@ -24,7 +23,7 @@ parser.add_argument("--test-data", type=str, default="", help="File containing t
 parser.add_argument("--num-test-samples", type=int, help="Number of test samples")
 parser.add_argument("--input-batch-size", type=int, default=128, help="Batch size for input processing")
 parser.add_argument("--eval-batch-size", type=int, default=64, help="Batch size for evaluation")
-parser.add_argument("--num-procs", type=int, default=0, help="Number of processes for generation in parallel")
+parser.add_argument("--use-cpu", action='store_true', help="Use CPU instead of GPU for inference")
 args = parser.parse_args(sys.argv[1:])
 
 run_name = args.app
@@ -34,13 +33,13 @@ eval_batch_size = args.eval_batch_size
 vocab_filepath = args.vocab_data
 test_filepath = args.test_data or vocab_filepath
 num_test_samples = args.num_test_samples
-num_procs = args.num_procs
+use_cpu = args.use_cpu
 
 # directories
 model_dir = args.model or f"model_weights/{run_name}" # shortcut for when app has same name as model directory (does not apply to dlrm_*) 
 out_dir = f"data/{run_name.split('_')[0]}/eval"
 
-def generate_sequence_dlrm(batch, model, num_features, id_to_idx):
+def generate_sequence_dlrm(batch, model, num_features, id_to_idx, device):
     result = {}
     input_ids = batch["input_ids"].to(device)
 
@@ -58,7 +57,7 @@ def generate_sequence_dlrm(batch, model, num_features, id_to_idx):
 
     return result
 
-def generate_sequence_llm_hnsw(batch, model, id_to_idx):
+def generate_sequence_llm_hnsw(batch, model, id_to_idx, device):
     inputs = batch['input_ids'].to(device)
     targets = batch['labels'].to(device)
     attention_mask = batch['attention_mask'].to(device)
@@ -79,6 +78,12 @@ def generate_sequence_llm_hnsw(batch, model, id_to_idx):
 
 
 if __name__ == "__main__":
+    print(sys.argv[1:], flush=True)
+
+    # Set device
+    device = torch.device("cuda" if torch.cuda.is_available() and not use_cpu else "cpu")
+    print(f"Using device: {device}", flush=True)
+
     # Load vocabulary, model, and test data
     print(f"Loading vocabulary for use case {vocab_filepath}...", flush=True)
     idx_to_id, id_to_idx, page_to_id, input_cols, target_cols, max_seq_len = get_vocab(vocab_filepath, is_1_to_1)
@@ -126,12 +131,12 @@ if __name__ == "__main__":
         results = test_data.map(
             generate_sequence_dlrm,
             batched=True,
-            num_proc=num_procs or None,
             batch_size=eval_batch_size,
             fn_kwargs={
                 "model": model,
                 "num_features": max_seq_len,
                 "id_to_idx": id_to_idx,
+                "device": device,
             },
         )
         result_dict = {}
@@ -142,11 +147,11 @@ if __name__ == "__main__":
         result_dict = test_data.map(
             generate_sequence_llm_hnsw,
             batched=True,
-            num_proc=num_procs or None,
             batch_size=eval_batch_size,
             fn_kwargs={
                 "model": model,
                 "id_to_idx": id_to_idx,
+                "device": device,
             },
         )
 
