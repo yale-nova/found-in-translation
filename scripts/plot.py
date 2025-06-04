@@ -329,9 +329,6 @@ def plot_fig7(file_ext, DATA_DIR, PLOT_DIR):
         [(llm_nitro, 'Our attack (Nitro)'),(llm_sgx, 'Our attack (SGX)'),(nb_llm, 'Naive Bayes'), (ih_llm, 'IHOP'),],
         [(hnsw_nitro, 'Our attack (Nitro)'),(hnsw_sgx, 'Our attack (SGX)'),(nb_hnsw, 'Naive Bayes'), (ih_hnsw, 'IHOP')]
     ]
-    plt.rcParams["font.family"] = "Times New Roman"
-    plt.rcParams["font.size"] = 16
-    plt.rcParams["axes.labelsize"] = 18
 
     plot_normed_cdf_grid(grid_inputs, titles=['DLRM', 'LLM', 'HNSW'], xlabel="Normalized hamming distance", fname=filename, colname='hamming_norm')
     print(f"Saved plot to {filename}.")
@@ -395,7 +392,11 @@ if __name__ == "__main__":
     PLOT_DIR = args.plot_dir
     
     os.makedirs(PLOT_DIR, exist_ok=True)
-    
+
+    plt.rcParams["font.family"] = "Times New Roman"
+    plt.rcParams["font.size"] = 16
+    plt.rcParams["axes.labelsize"] = 18
+
     if args.fig is not None:
         match args.fig:
             case 7:
