@@ -88,18 +88,6 @@ class NaiveBayesHistogramDLRM:
         data = []
         pred_colname = 'pred'
         if self.is_1_to_1:
-            # for _, row in xy_test.iterrows():
-            #     pred = [-1 for _ in range(self.num_features)]
-            #     for i in range(self.num_features):
-            #         page_accessed = row[self.incols[i]]
-            #         target_index = row[self.outcols[i]]
-            #         key = (page_accessed, target_index)
-            #         if not key in self.pages_to_indices_per_lookup[i]: # find closest page
-            #             pred[i] = self.find_closest_key(self.pages_to_indices_per_lookup[i], page_accessed)[1] \
-            #                 if self.find_closest else 0
-            #         else:
-            #             pred[i] = target_index
-            #     data.append({ 'hamming_dist': sum([1 for i in range(self.num_features) if pred[i] != row[self.outcols[i]]]) })
             for _, row in xy_test.iterrows():
                 result_row = {}
                 for i in range(self.num_features):
@@ -243,6 +231,8 @@ if __name__ == '__main__':
     if args.app not in PAGE_ACCESS_MODE_TO_DATASET_FOLDER:
         raise ValueError(f"Unknown app: {args.app}. Available options: {list(PAGE_ACCESS_MODE_TO_DATASET_FOLDER.keys())}")
     
+    np.random.seed(SHUFFLE_SEED)
+    random.seed(SHUFFLE_SEED)
     t = time.time()
 
     xy = pd.read_csv(os.path.join(PAGE_ACCESS_MODE_TO_DATASET_FOLDER[args.app], 'all.csv'))
