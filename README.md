@@ -12,6 +12,8 @@ This repository contains the code and data used for evaluations in the paper "Fo
 ```
 The `attacks` directory contains code for evaluating our attack (`fit`), IHOP, and the Naive Bayes baseline. The `data` directory contains preprocessed training and testing datasets used in our evaluation. `model_weights` stores our trained language models for each evaluated use case. `scripts` contains bash and python scripts to run all attacks and plot the results shown in our paper.
 
+For the full contents of `data` and `model_weights` needed for evaluation, please download our artifact from Zenodo with the DOI [10.5281/zenodo.15602651](https://doi.org/10.5281/zenodo.15602651).
+
 ### Datasets
 ```
 data/
@@ -20,6 +22,7 @@ data/
 │   ├── ihop_dlrm.pkl
 │   ├── ihop_dlrm_1_1.pkl
 │   ├── sgx.csv
+│   ├── test.csv
 │   ├── times.csv
 │   ├── error_traces/
 │   │   ├── err1.csv
@@ -34,7 +37,7 @@ data/
 
 The `data` directory contains a subdirectory for each use case evaluated in our paper: `dlrm`, `llm`, and `hnsw`.
 
-For DLRM, `all.csv` contains columns `page_i` and `idx_i` for `i=1..26`, where `page_i` is the `i`th page observed to be accessed for an inference request in a Nitro Enclave and `idx_i` is the ground-truth index of the embedding table entry that was accessed. `test.csv` is similarly structured, containing the access sequences used for the evaluation, and `sgx.csv` contains the same but observed page accesses collected from an SGX enclave. The subdirectory `error_traces` contains datasets of the same format but with injected errors in observed page accesses (for our error sensitivity plots -- Figure 9 in the paper). `times.csv` contains the data of request durations needed to reproduce our latency overhead plots (Figure 10). Also included are one or more `.pkl` files containing the results of the [IHOP attack](#ihop) on this data.
+For DLRM, `all.csv` contains columns `page_i` and `idx_i` for `i=1..26`, where `page_i` is the `i`th page observed to be accessed for an inference request in a Nitro Enclave and `idx_i` is the ground-truth index of the embedding table entry that was accessed. `test.csv` is similarly structured, containing the access sequences used for the evaluation, and `sgx.csv` contains the same but observed page accesses collected from an SGX enclave. The subdirectory `error_traces` contains datasets of the same format but with injected errors in observed page accesses (for our error sensitivity plots -- Figure 9 in the paper). `times.csv` contains the data of request durations needed to reproduce our latency overhead plots (Figure 10). Also included are one or more `.pkl` files containing the results of the [IHOP attack](#running-ihop) on this data.
 
 LLM and HNSW have similar subdirectory structures to DLRM. `all.csv` and `sgx.csv` contain two columns: `encseq` contains a space-separated list of observed page accesses, and `seq` contains a space-separated list of the ground-truth accesses over objects -- embedding table entries for LLM and nodes for HNSW. Instead of using a separate `test.csv`, the models of LLM and HNSW evaluate on the test split of `all.csv`. 
 
