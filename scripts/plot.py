@@ -13,6 +13,9 @@ import warnings # to suppress FutureWarnings from seaborn
  
 warnings.filterwarnings("ignore", category=FutureWarning, module="seaborn")
 
+ATTACK_NAME = '\\textsc{FiT}'
+TITLE_LIST = ['\\textbf{DLRM}', '\\textbf{LLM}', '\\textbf{HNSW}']
+
 # parameters from IHOP
 SHUFFLE_SEED = 0
 DLRM_TABLES = [1,2,5,6,8,9,13,14,17,19,20,22,23,25]
@@ -180,7 +183,7 @@ def plot_normed_cdf_grid(df_label_lst_by_app, titles=None, xlabel="Normalized ha
             ax.set_ylabel('')
         ax.set_xlabel(xlabel)
         if titles is not None:
-            ax.set_title(titles[idx], fontweight='bold')
+            ax.set_title(titles[idx])
         if idx == 1:
             ax.legend()
     fig.savefig(fname, bbox_inches='tight')
@@ -198,7 +201,7 @@ def plot_errs_grid(infile_tups, outfile_name='all-fpfn-hamming-norm.pdf'):
         axes = [axes]
     for idx, (infile_base, infile_suffix, name) in enumerate(infile_tups):
         ax = axes[idx]
-        is_dlrm = name == 'DLRM'
+        is_dlrm = 'DLRM' in name
         percdfs = []
         for i in perc:
             df = pd.read_csv(f'{infile_base}{i}{infile_suffix}')
@@ -210,7 +213,7 @@ def plot_errs_grid(infile_tups, outfile_name='all-fpfn-hamming-norm.pdf'):
             percdfs.append(df)
         for i, df in enumerate(percdfs):
             ax.ecdf(df['hamming_norm'], label=f'{perc[i]}% error')
-        ax.set_title(name, fontweight='bold')
+        ax.set_title(name)
         ax.set_ylabel('Cumulative frequency')
         ax.set_xlabel('Normalized hamming distance')
         ax.set_xlim(0, 1.0)
@@ -254,7 +257,7 @@ def plot_durations_grid(dfs, filename, titles=None, cdf=False, nbins=50, binwidt
             ax.legend().remove()
         ax.set_xlabel('Inference request duration (milliseconds)')
         if titles is not None and i < len(titles):
-            ax.set_title(titles[i], fontweight='bold')
+            ax.set_title(titles[i])
     plt.savefig(filename, bbox_inches='tight')
     # plt.show()
 
@@ -325,12 +328,12 @@ def plot_fig7(file_ext, DATA_DIR, PLOT_DIR):
     add_hamming_norm(nb_hnsw)
 
     grid_inputs = [
-        [(dlrm_nitro, 'Our attack (Nitro)'), (dlrm_sgx, 'Our attack (SGX)'), (nb_dlrm, 'Naive Bayes'), (ih_dlrm, 'IHOP')],
-        [(llm_nitro, 'Our attack (Nitro)'),(llm_sgx, 'Our attack (SGX)'),(nb_llm, 'Naive Bayes'), (ih_llm, 'IHOP'),],
-        [(hnsw_nitro, 'Our attack (Nitro)'),(hnsw_sgx, 'Our attack (SGX)'),(nb_hnsw, 'Naive Bayes'), (ih_hnsw, 'IHOP')]
+        [(dlrm_nitro, ATTACK_NAME + ' (Nitro)'), (dlrm_sgx, ATTACK_NAME + ' (SGX)'), (nb_dlrm, 'Naive Bayes'), (ih_dlrm, 'IHOP')],
+        [(llm_nitro, ATTACK_NAME + ' (Nitro)'),(llm_sgx, ATTACK_NAME + ' (SGX)'),(nb_llm, 'Naive Bayes'), (ih_llm, 'IHOP'),],
+        [(hnsw_nitro, ATTACK_NAME + ' (Nitro)'),(hnsw_sgx, ATTACK_NAME + ' (SGX)'),(nb_hnsw, 'Naive Bayes'), (ih_hnsw, 'IHOP')]
     ]
 
-    plot_normed_cdf_grid(grid_inputs, titles=['DLRM', 'LLM', 'HNSW'], xlabel="Normalized hamming distance", fname=filename, colname='hamming_norm')
+    plot_normed_cdf_grid(grid_inputs, titles=TITLE_LIST, xlabel="Normalized hamming distance", fname=filename, colname='hamming_norm')
     print(f"Saved plot to {filename}.")
 
 def plot_fig8(file_ext, DATA_DIR, PLOT_DIR):
@@ -350,7 +353,7 @@ def plot_fig8(file_ext, DATA_DIR, PLOT_DIR):
     add_hamming_norm(ih_1_1, is_dlrm=True)
     add_hamming_norm(nb_1_1, is_dlrm=True)
     add_hamming_norm(df1_1, is_dlrm=True)
-    lst_1_1 = [(df1_1,'Our attack'),(nb_1_1,'Naive Bayes') ,(ih_1_1, 'IHOP')]
+    lst_1_1 = [(df1_1,ATTACK_NAME),(nb_1_1,'Naive Bayes') ,(ih_1_1, 'IHOP')]
     plot_normed_cdf(lst_1_1, fname=filename, legend_loc='lower center', xy_shift=(0.45, 0))
     print(f"Saved plot to {filename}.")
 
@@ -359,9 +362,9 @@ def plot_fig9(file_ext, DATA_DIR, PLOT_DIR):
     filename = os.path.join(PLOT_DIR, 'fig9-all-fpfn-hamming-norm' + file_ext)
     
     err_grid_inputs = [
-        (os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_err'), '.csv', 'DLRM'),
-        (os.path.join(DATA_DIR, 'llm', 'eval', 'llm_err'), '.csv', 'LLM'),
-        (os.path.join(DATA_DIR, 'hnsw', 'eval', 'hnsw_err'), '.csv', 'HNSW'),   
+        (os.path.join(DATA_DIR, 'dlrm', 'eval', 'dlrm_err'), '.csv', TITLE_LIST[0]),
+        (os.path.join(DATA_DIR, 'llm', 'eval', 'llm_err'), '.csv', TITLE_LIST[1]),
+        (os.path.join(DATA_DIR, 'hnsw', 'eval', 'hnsw_err'), '.csv', TITLE_LIST[2]),   
     ]
     plot_errs_grid(err_grid_inputs, outfile_name=filename)
     print(f"Saved plot to {filename}.")
@@ -374,7 +377,7 @@ def plot_fig10(file_ext, DATA_DIR, PLOT_DIR):
     times_llm = pd.read_csv(os.path.join(DATA_DIR, 'llm', 'times.csv'))
     times_hnsw = pd.read_csv(os.path.join(DATA_DIR, 'hnsw', 'times.csv'))
     grid_inputs = [times_dlrm, times_llm, times_hnsw]
-    grid_titles = ['DLRM', 'LLM', 'HNSW']
+    grid_titles = TITLE_LIST
    
     plot_durations_grid(grid_inputs, filename, titles=grid_titles, cdf=True, binwidth=0.02)
     print(f"Saved plot to {filename}.")
@@ -393,7 +396,16 @@ if __name__ == "__main__":
     
     os.makedirs(PLOT_DIR, exist_ok=True)
 
-    plt.rcParams["font.family"] = "Times New Roman"
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "text.latex.preamble": r"""
+            \usepackage{mathptmx}
+            \usepackage[T1]{fontenc}
+            \usepackage{textcomp}
+        """
+    })
     plt.rcParams["font.size"] = 16
     plt.rcParams["axes.labelsize"] = 18
 
