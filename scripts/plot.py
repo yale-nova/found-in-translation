@@ -19,9 +19,6 @@ TITLE_LIST = ['\\textbf{DLRM}', '\\textbf{LLM}', '\\textbf{HNSW}']
 # parameters from IHOP
 SHUFFLE_SEED = 0
 DLRM_TABLES = [1,2,5,6,8,9,13,14,17,19,20,22,23,25]
-IHOP_DLRM_BEST_ITER = 0
-IHOP_LLM_BEST_ITER = 0
-IHOP_HNSW_BEST_ITER = 0
 
 def add_cols(df, colname='targ'):
     """
@@ -67,17 +64,17 @@ def add_seqlen(df):
     df['seqlen'] = lens
     df['hamming_dist'] = hdists
 
-def get_ihdf_dlrm(fpath, desired_idx=-1, num_test_samps=100000):
+def get_ihdf_dlrm(fpath, idx=0, num_test_samps=100000):
     """
     For IHOP attack on DLRM, reads results into a DataFrame with target and predicted values for each table.
     fpath: path to pickle file containing output of IHOP attack.
-    desired_idx: index of iteration in IHOP attack to use for predictions (default -1 uses last iteration).
+    idx: index into list of lists of IHOP predictions.
     """
     with open(fpath,'rb') as f:
         itarg, ipred = pickle.load(f)
     num_tables = len(DLRM_TABLES)
     itarg100k = itarg[:num_test_samps*num_tables]
-    ipred100k = ipred[desired_idx][:num_test_samps*num_tables] # ipred indexed by n_iters
+    ipred100k = ipred[idx][:num_test_samps*num_tables]
     
     ihdict = {}
     start_idx = 0
@@ -94,13 +91,12 @@ def get_ihdf_dlrm(fpath, desired_idx=-1, num_test_samps=100000):
     ihdf = pd.DataFrame(data=ihdict)
     return add_cols(ihdf)
 
-def get_ihdf_hnsw(fpath, data_path, num_train_samples, num_test_samples, desired_idx=-1):
+def get_ihdf_hnsw(fpath, data_path, num_train_samples, num_test_samples):
     """
     For IHOP attack on LLM and HNSW, reads results into a DataFrame with target and predicted sequences.
     """
     with open(fpath,'rb') as f:
         itarg, ipred = pickle.load(f)
-    ipred = ipred[desired_idx]
 
     inputs = pd.read_csv(data_path)
     _, test_data = train_test_split(inputs, train_size=num_train_samples, test_size=num_test_samples, random_state=SHUFFLE_SEED, shuffle=True)
@@ -112,7 +108,7 @@ def get_ihdf_hnsw(fpath, data_path, num_train_samples, num_test_samples, desired
         test = [int(x) for x in row['seq'].split()]
         seq_len = len(test)
         targ = itarg[curr_idx:curr_idx+seq_len]
-        pred = ipred[curr_idx:curr_idx+seq_len]
+        pred = ipred[0][curr_idx:curr_idx+seq_len]
         assert targ == test, f'mismatch in row {i}:\n{targ}\n{test}'
         hdist = sum([0 if targ[i] == pred[i] else 1 for i in range(seq_len)])
         assert hdist <= seq_len
@@ -293,20 +289,20 @@ def plot_fig7(file_ext, DATA_DIR, PLOT_DIR):
     llm_sgx = pd.read_csv(os.path.join(DATA_DIR, 'llm', 'eval', 'llm_sgx.csv'))
     add_seqlen(llm_sgx)
 
-    ih_dlrm = get_ihdf_dlrm(get_results_path('dlrm', 'ihop_dlrm.pkl'), desired_idx=IHOP_DLRM_BEST_ITER)
+    ih_dlrm = get_ihdf_dlrm(get_results_path('dlrm', 'ihop_dlrm.pkl'))
 
     nb_dlrm = pd.read_csv(get_results_path('dlrm', 'nb_dlrm.csv')) 
     add_cols(nb_dlrm, colname='idx')
 
     ih_fpath = get_results_path('llm', 'ihop_llm.pkl')
-    ih_llm = get_ihdf_hnsw(ih_fpath, os.path.join(DATA_DIR, 'llm', 'all.csv'), num_train_samples=500000, num_test_samples=50000, desired_idx=IHOP_LLM_BEST_ITER)
+    ih_llm = get_ihdf_hnsw(ih_fpath, os.path.join(DATA_DIR, 'llm', 'all.csv'), num_train_samples=500000, num_test_samples=50000)
 
     nb_llm = pd.read_csv(get_results_path('llm', 'nb_llm.csv'))
     add_seqlen(nb_llm)
     add_hamming_norm(nb_llm)
 
     ih_fpath = get_results_path('hnsw', 'ihop_hnsw.pkl')
-    ih_hnsw = get_ihdf_hnsw(ih_fpath, os.path.join(DATA_DIR, 'hnsw', 'all.csv'), num_train_samples=22500, num_test_samples=2600, desired_idx=IHOP_HNSW_BEST_ITER)
+    ih_hnsw = get_ihdf_hnsw(ih_fpath, os.path.join(DATA_DIR, 'hnsw', 'all.csv'), num_train_samples=22500, num_test_samples=2600)
 
     nb_hnsw = pd.read_csv(get_results_path('hnsw', 'nb_hnsw.csv'))
     add_seqlen(nb_hnsw)
@@ -344,7 +340,7 @@ def plot_fig8(file_ext, DATA_DIR, PLOT_DIR):
     add_cols(df1_1)
 
     ihdf_eval_path = get_results_path('dlrm', 'ihop_dlrm_1_1.pkl')
-    ih_1_1 = get_ihdf_dlrm(ihdf_eval_path)
+    ih_1_1 = get_ihdf_dlrm(ihdf_eval_path, idx=-1)
     
     nb_eval_path = get_results_path('dlrm', 'nb_dlrm_1_1.csv')
     nb_1_1 = pd.read_csv(nb_eval_path)
