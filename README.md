@@ -44,17 +44,25 @@ LLM and HNSW have similar subdirectory structures to DLRM. `all.csv` and `sgx.cs
 ## Tested Configurations
 We have run our experiments on the following system configurations:
 
-**CPU setup**
-- Hardware: AMD EPYC 7302P 16/24-Core Processor
+### CPU setup
+
+**Linux**
+- Hardware: AMD EPYC 7302P 16-Core Processor
 - OS: Ubuntu 22.04.2 LTS
 
-**GPU setup (for our attack)**
+**Mac OS**
+- Hardware: Apple M2 Pro 12-Core Processor
+- OS: macOS Sonoma 14.6.1
+
+### GPU setup (for our attack)
 - Hardware: NVIDIA GeForce RTX 4090
 - OS: Ubuntu 24.04.1 LTS
 
-Given these setups, the following table summarizes the main results in our paper and the estimated time needed to sequentially run all the experiments for those results. Times for Attack Efficacy are itemized by attack: our attack (FiT), IHOP, and Naive Bayes (NB).
+Given these setups, the following table summarizes the main results in our paper and the estimated time needed to sequentially run all the experiments for those results.
 
-| Experiment Name / Section | Related Figures  | Estimated Time on GPU <br> (FiT + IHOP + NB) | Estimated Time on CPU <br> (FiT + IHOP + NB)|
+The times for Attack Efficacy are itemized by attack: our attack (FIT), IHOP, and Naive Bayes (NB). The IHOP times are based on prior runs with the AMD setup and serve as an upper bound; we have observed an up to 2x speedup on the Apple M2 Pro for some experiments.
+
+| Experiment Name / Section | Related Figures  | Estimated Time on GPU <br> (FIT + IHOP + NB) | Estimated Time on CPU <br> (FIT + IHOP + NB)|
 |---------------------------|------------------|------------------------|------------------------|
 | Attack Efficacy           | Fig. 7, Fig. 8    | 3h + 56h + 1.5h = 60.5h     |  68h + 56h + 1.5h = 125.5h   |
 | Practical Considerations  | Fig. 9, Fig. 10   |     6.5h     |    115.5h    |
@@ -72,16 +80,23 @@ Next, install the required dependencies:
 ```
  pip install -r requirements.txt
 ```
-Then, you can reproduce our results using the provided scripts.
+Then, you can run a basic test of all attacks and reproduce our results using the provided scripts.
+
+## Basic Test
+The following script runs FIT, IHOP, and the Naive Bayes baseline on a single test sample from the LLM use case:
+```
+bash scripts/run_basic_test.sh
+```
+We expect the tests to take around 5 minutes in total. Each attack should populate the `data/llm/eval` directory with a results file -- `llm_nitro.csv`, `nb_llm.csv`, and `ihop_llm.pkl`, respectively. These files will be overwritten when running our experiments, detailed below.
 
 ## Reproducing Results
 
 ### Attack Efficacy
 The Attack Efficacy experiments compare the accuracies of our attack, IHOP, and a Naive Bayes classifier in predicting ground-truth access sequences across application-level objects.
 
-A breakdown of estimated times is shown below. Please note that for DLRM, LLM, HNSW, the estimated times for our attack (FiT) are doubled as it is evaluated on page traces from Nitro *and* SGX Enclaves. The remaining experiments use only Nitro page traces.
+A breakdown of estimated times is shown below. Please note that for DLRM, LLM, HNSW, the estimated times for our attack (FIT) are doubled as it is evaluated on page traces from Nitro *and* SGX Enclaves. The remaining experiments use only Nitro page traces.
 
-| Use Case          | FiT (GPU)  | FiT (CPU) | IHOP |  Naive Bayes |
+| Use Case          | FIT (GPU)  | FIT (CPU) | IHOP |  Naive Bayes |
 |-------------------|----------|------------|-------|-------------|
 | DLRM              |   1h 20m |    44h     |  25h     |     12m    |
 | LLM               | 1h 10m   |     2h     |    5m    |  1h 15m  |
@@ -108,7 +123,7 @@ If cloning from GitHub, please run the following from the root directory to fetc
 git submodule init
 git submodule update
 cd attacks
-cp page_experiment.py fit_use_cases.patch USENIX22-ihop-code
+mv page_experiment.py fit_use_cases.patch USENIX22-ihop-code
 cd USENIX22-ihop-code
 git apply fit_use_cases.patch
 ```
@@ -131,7 +146,7 @@ python3 scripts/plot.py --file-ext .png --data-dir data --plot-dir plots --fig 8
 ### Practical Considerations
 This section reproduces the sensitivity analysis of our attack given various error rates, requiring 5 runs for each evaluated use case. The breakdown of estimated times is shown below.
 
-| Use Case          | FiT (GPU)  | FiT (CPU) | 
+| Use Case          | FIT (GPU)  | FIT (CPU) | 
 |-------------------|----------|------------|
 | DLRM              |   3h 20m |    110h     | 
 | LLM               |    3h    |     5h     |
@@ -140,6 +155,10 @@ This section reproduces the sensitivity analysis of our attack given various err
 The following script runs all experiments sequentially:
 ```
 bash scripts/run_fit_sensitivity.sh
+```
+For CPU-only platforms, the number of test samples can be set in the same manner as for `run_fit.sh`:
+```
+bash scripts/run_fit_sensitivity.sh 1000 5000 2600 --use-cpu
 ```
 You can then reproduce Figures 9 and 10:
 ```
