@@ -11,10 +11,10 @@ import math
 import random
 
 PAGE_ACCESS_MODE_TO_DATASET_FOLDER = {
-    'dlrm': '../../data/dlrm/',
-    'dlrm_1_1': '../../data/dlrm/',
-    'llm': '../../data/llm/',
-    'hnsw': '../../data/hnsw/',
+    'dlrm': 'data/dlrm/',
+    'dlrm_1_1': 'data/dlrm/',
+    'llm': 'data/llm/',
+    'hnsw': 'data/hnsw/',
 }
 SHUFFLE_SEED = 0
 DLRM_NUM_TABLES = 26
