@@ -143,6 +143,7 @@ if __name__ == "__main__":
         for i in range(max_seq_len):
             result_dict[f"pred_{i+1}"] = torch.flatten(results[f"pred_{i+1}"]).tolist()
             result_dict[f"targ_{i+1}"] = torch.flatten(results[f"targ_{i+1}"]).tolist()
+        result_df = pd.DataFrame(result_dict)
     else:
         result_dict = test_data.map(
             generate_sequence_llm_hnsw,
@@ -154,9 +155,7 @@ if __name__ == "__main__":
                 "device": device,
             },
         )
-
-    # Save predictions and ground truth to CSV
-    result_df = pd.DataFrame(result_dict)
+        result_df = pd.DataFrame(result_dict, columns=['targ', 'pred'])
 
     os.makedirs(out_dir, exist_ok=True)
     out_filename = run_name + '.csv' # test_filepath[test_filepath.index("data/") + len("data/"):].replace("/", "_")
