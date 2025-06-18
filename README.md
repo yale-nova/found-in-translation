@@ -103,7 +103,7 @@ This will greatly reduce the execution time on CPU and the results should still 
 #### Running IHOP
 Due to the long running times of IHOP on some experiments, we provide results from previous runs of the attack in the directories corresponding to each use case in `data` as `ihop_dlrm.pkl`, `ihop_dlrm_1_1.pkl`, `ihop_llm.pkl`, and `ihop_hnsw.pkl`. Reproducing this attack will save the results to the `eval` directory under each use case, and our plotting script will use the new results if they exist.
 
-To set up the IHOP code for our use cases, run the following from the root directory:
+If cloning from GitHub, please run the following from the root directory to fetch the IHOP code and patch it for our use cases. These steps should be skipped if the artifact is downloaded from Zenodo.
 ```
 git submodule init
 git submodule update
