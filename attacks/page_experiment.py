@@ -42,7 +42,7 @@ def _get_data_adv(data_path, num_train_samples, num_test_samples, input_col, tar
     
     data_adv = [[x] for x in unique_indices]
 
-    print(f"nkw = {n}. Building F_aux...")
+    print(f"nkw = {n}. Building F_aux from training data...")
     train_data, test_data = train_test_split(inputs, train_size=num_train_samples, test_size=num_test_samples, random_state=SHUFFLE_SEED, shuffle=True)
     
     trace = []
@@ -78,7 +78,7 @@ def generate_accesses(gen_params, num_train_samples, num_test_samples):
     print('Generated auxiliary dataset.')
 
     assert len(test_data) == num_test_samples, f"Expected {num_test_samples} test samples, got {len(test_data)}"
-    print("Generating trace, real accesses...")
+    print("Generating page trace and real object accesses...")
     traces, real_queries = get_traces_real(test_data, page_to_idx, input_col, target_col)
     observations = {
         'trace_type': 'ap_unique',
@@ -141,8 +141,6 @@ def _get_data_adv_dlrm(data_path, num_train_samples, num_test_samples, tables):
             if page not in page_to_indices:
                 page_to_indices[page] = set()
             page_to_indices[page].add(row[f'idx_{j}'])
-        if i % 500000 == 0:
-            print(i, end=' ', flush=True)
     data_adv = list(map(lambda x: list(x), page_to_indices.values())) # kws (entries) in each doc (page)
 
     unique_indices = set()
@@ -154,7 +152,7 @@ def _get_data_adv_dlrm(data_path, num_train_samples, num_test_samples, tables):
     value_to_idx = {value: idx for idx, value in enumerate(unique_indices)}
     chosen_kw_indices = list(range(n))
 
-    print(f"nkw = {n}. Building F_aux...")
+    print(f"nkw = {n}. Building F_aux from training data...")
     Faux = np.zeros((n, n))
     m = np.zeros((n, n))
     trace = []
@@ -182,7 +180,7 @@ def generate_dlrm_accesses(gen_params, num_train_samples, num_test_samples):
 
     test_data = pd.read_csv(test_filename)
     assert len(test_data) == num_test_samples, f"Expected {num_test_samples} test samples, got {len(test_data)}"
-    print(f"nqr = {len(test_data) * len(DLRM_TABLES)}. Generating trace, real accesses...")
+    print(f"nqr = {len(test_data) * len(DLRM_TABLES)}. Generating page trace and real object accesses...")
     traces, real_queries = get_traces_real_dlrm(DLRM_TABLES, test_data, page_to_idx, value_to_idx, is_1_to_1='1_1' in gen_params['dataset'])
     assert len(real_queries) == len(test_data) * len(DLRM_TABLES)
     observations = {
@@ -190,7 +188,6 @@ def generate_dlrm_accesses(gen_params, num_train_samples, num_test_samples):
         'traces': traces,
         'ndocs': len(data_adv)
     }
-    print('Done.')
 
     return full_data_adv, observations, real_queries
 
@@ -210,33 +207,10 @@ def run_page_access_experiment(exp_param, seed, num_train_samples, num_test_samp
         print("Generated observations ({:.1f} secs)".format(time.time() - t0))
     
     keyword_predictions_for_each_query = run_attack(exp_param.att_params['name'], obs=observations, aux=full_data_adv, exp_params=exp_param)
-    v_print("Done running attack ({:.1f} secs)".format(time.time() - t0))
+    v_print("\nDone running attack ({:.1f} secs)".format(time.time() - t0))
     time_exp = time.time() - t0
     
-    out_dir = output_path = os.path.join(PAGE_ACCESS_MODE_TO_DATASET_FOLDER[exp_param.gen_params['dataset']], 'eval')
-    os.makedirs(out_dir, exist_ok=True)
-    output_path = os.path.join(out_dir, f'ihop_{exp_param.gen_params['dataset']}.pkl')
-    with open(output_path, 'wb') as f:
-        pickle.dump((real_and_dummy_queries, keyword_predictions_for_each_query), f)
-    v_print("Saved results to {:s} ({:.1f} secs)".format(output_path, time.time() - t0))
-
-    # Compute accuracy
-    if type(keyword_predictions_for_each_query) == list and type(keyword_predictions_for_each_query[0]) != list:
-        acc_vector = np.array([1 if query == prediction else 0 for query, prediction in zip(real_and_dummy_queries, keyword_predictions_for_each_query)])
-        acc_un_vector = np.array([np.mean(acc_vector[real_and_dummy_queries == i]) for i in set(real_and_dummy_queries)])
-        accuracy = np.mean(acc_vector)
-        accuracy_un = np.mean(acc_un_vector)
-        return accuracy, accuracy_un, time_exp
-    elif type(keyword_predictions_for_each_query) == list and type(keyword_predictions_for_each_query[0]) == list:
-        acc_list, acc_un_list = [], []
-        for pred in keyword_predictions_for_each_query:
-            acc_vector = np.array([1 if query == prediction else 0 for query, prediction in zip(real_and_dummy_queries, pred)])
-            acc_un_vector = np.array([np.mean(acc_vector[real_and_dummy_queries == i]) for i in set(real_and_dummy_queries)])
-            acc_list.append(np.mean(acc_vector))
-            acc_un_list.append(np.mean(acc_un_vector))
-        return acc_list, acc_un_list, time_exp
-    else:
-        return -1, -1, -1
+    return keyword_predictions_for_each_query, real_and_dummy_queries, time_exp
    
     
 def print_exp_to_run(parameter_dict, n_runs):
@@ -265,7 +239,6 @@ if __name__ == "__main__":
 
     np.set_printoptions(precision=4)
     print(exp_params)
-    acc_list = [[] for _ in attack_list]
 
     seed = 1
     print("Seed: ", seed)
@@ -273,16 +246,11 @@ if __name__ == "__main__":
     for i_att, (att, att_p) in enumerate(attack_list):
         exp_params.set_attack_params(att, **att_p)
         exp_params.att_params['niter_list'] = niter_list
-        acc, accu, time_exp = run_page_access_experiment(exp_params, seed, args.num_train_samples, args.num_test_samples, debug_mode=True)
-        if type(acc) == list:
-            acc_list[i_att].append((acc[-1], accu[-1]))
-            for acc, accu, niters in zip(acc, accu, exp_params.att_params['niter_list']):
-                print("{:d}-{:d}) {:s}, acc={:.3f}, accu={:.3f} ({:.2f} secs)".format(seed, niters, att, acc, accu, time_exp))
-        else:
-            acc_list[i_att].append((acc, accu))
-            print("{:d}) {:s}, acc={:.3f}, accu={:.3f} ({:.2f} secs)".format(seed, att, acc, accu, time_exp))
-
-    print("Summary of results:")
-    for i_att, (att, att_p) in enumerate(attack_list):
-        print("{:s}: avg acc={:.3f}, avg accu={:.3f}".format(att, *[np.mean(aux) for aux in zip(*acc_list[i_att])]))
+        preds, targs, time_exp = run_page_access_experiment(exp_params, seed, args.num_train_samples, args.num_test_samples, debug_mode=True)
+        out_dir = os.path.join(PAGE_ACCESS_MODE_TO_DATASET_FOLDER[exp_params.gen_params['dataset']], 'eval')
+        os.makedirs(out_dir, exist_ok=True)
+        output_path = os.path.join(out_dir, f"ihop_{exp_params.gen_params['dataset']}.pkl")
+        with open(output_path, 'wb') as f:
+            pickle.dump((targs, preds), f)
+        print("Saved results to {:s}".format(output_path))
 
