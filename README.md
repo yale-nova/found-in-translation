@@ -10,7 +10,7 @@ This repository contains the code and data used for evaluations in the paper "Fo
  ├── plots/  
  └── scripts/
 ```
-The `attacks` directory contains code for evaluating our attack (`fit`), IHOP, and the Naive Bayes baseline. The `data` directory contains preprocessed training and testing datasets used in our evaluation. `model_weights` stores our trained language models for each evaluated use case. `scripts` contains bash and python scripts to run all attacks and plot the results shown in our paper.
+The `attacks` directory contains code for evaluating our attack (`fit`), IHOP, and the Naive Bayes baseline. The `data` directory contains preprocessed training and testing datasets used in our evaluation. `model_weights` stores our trained language models for each evaluated use case. `scripts` contains bash and Python scripts to run all attacks and plot the results shown in our paper.
 
 For the full contents of `data` and `model_weights` needed for evaluation, please download our artifact from Zenodo with the DOI [10.5281/zenodo.15602651](https://doi.org/10.5281/zenodo.15602651).
 
@@ -37,7 +37,7 @@ data/
 
 The `data` directory contains a subdirectory for each use case evaluated in our paper: `dlrm`, `llm`, and `hnsw`.
 
-For DLRM, `all.csv` contains columns `page_i` and `idx_i` for `i=1..26`, where `page_i` is the `i`th page observed to be accessed for an inference request in a Nitro Enclave and `idx_i` is the ground-truth index of the embedding table entry that was accessed. `test.csv` is similarly structured, containing the access sequences used for the evaluation, and `sgx.csv` contains the same but observed page accesses collected from an SGX enclave. The subdirectory `error_traces` contains datasets of the same format but with injected errors in observed page accesses (for our error sensitivity plots -- Figure 9 in the paper). `times.csv` contains the data of request durations needed to reproduce our latency overhead plots (Figure 10). Also included are one or more `.pkl` files containing the results of the [IHOP attack](#running-ihop) on this data.
+For DLRM, `all.csv` contains columns `page_i` and `idx_i` for `i=1..26`, where `page_i` is the `i`th page observed to be accessed for an inference request in a Nitro Enclave and `idx_i` is the ground-truth index of the embedding table entry that was accessed. `test.csv` is similarly structured, containing the access sequences used for evaluation, and `sgx.csv` contains the same information but for observed page accesses collected from an SGX enclave. The subdirectory `error_traces` contains datasets of the same format, but with injected errors in observed page accesses, for our error sensitivity plots (Figure 9 in the paper). `times.csv` contains the data of request durations needed to reproduce our latency overhead plots (Figure 10). Also included are one or more `.pkl` files containing the results of the [IHOP attack](#running-ihop) on this data.
 
 LLM and HNSW have similar subdirectory structures to DLRM. `all.csv` and `sgx.csv` contain two columns: `encseq` contains a space-separated list of observed page accesses, and `seq` contains a space-separated list of the ground-truth accesses over objects -- embedding table entries for LLM and nodes for HNSW. Instead of using a separate `test.csv`, the models of LLM and HNSW evaluate on the test split of `all.csv`. 
 
@@ -58,9 +58,9 @@ We have run our experiments on the following system configurations:
 - Hardware: NVIDIA GeForce RTX 4090
 - OS: Ubuntu 24.04.1 LTS
 
-Given these setups, the following table summarizes the main results in our paper and the estimated time needed to sequentially run all the experiments for those results.
+Given these setups, the following table summarizes the main results in our paper and the estimated time needed to run all the experiments for those results sequentially.
 
-The times for Attack Efficacy are itemized by attack: our attack (FIT), IHOP, and Naive Bayes (NB). The IHOP times are based on prior runs with the AMD setup and serve as an upper bound; we have observed an up to 2x speedup on the Apple M2 Pro for some experiments.
+The times for Attack Efficacy are itemized by attack: our attack (FIT), IHOP, and Naive Bayes (NB). The IHOP times are based on prior runs with the AMD setup and serve as an upper bound; we have observed a speedup of up to 2x on the Apple M2 Pro for some experiments.
 
 | Experiment Name / Section | Related Figures  | Estimated Time on GPU <br> (FIT + IHOP + NB) | Estimated Time on CPU <br> (FIT + IHOP + NB)|
 |---------------------------|------------------|------------------------|------------------------|
@@ -69,7 +69,7 @@ The times for Attack Efficacy are itemized by attack: our attack (FIT), IHOP, an
 
 
 ## Quickstart
-We recommend replicating our execution environment using conda. Instructions to install Miniconda are found [here](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
+We recommend replicating our execution environment using conda. Instructions for installing Miniconda can be found [here](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
 To start, create a new conda environment with Python 3.12:
 ```
 conda create -n fit -y python=3.12  
@@ -94,7 +94,7 @@ We expect the tests to take around 5 minutes in total. Each attack should popula
 ### Attack Efficacy
 The Attack Efficacy experiments compare the accuracies of our attack, IHOP, and a Naive Bayes classifier in predicting ground-truth access sequences across application-level objects.
 
-A breakdown of estimated times is shown below. Please note that for DLRM, LLM, HNSW, the estimated times for our attack (FIT) are doubled as it is evaluated on page traces from Nitro *and* SGX Enclaves. The remaining experiments use only Nitro page traces.
+A breakdown of estimated times is shown below. Please note that for DLRM, LLM, and HNSW, the estimated times for our attack (FIT) are doubled as it is evaluated on page traces from Nitro *and* SGX Enclaves. The remaining experiments use only Nitro page traces.
 
 | Use Case          | FIT (GPU)  | FIT (CPU) | IHOP |  Naive Bayes |
 |-------------------|----------|------------|-------|-------------|
@@ -109,16 +109,16 @@ The evaluation script loads our BERT-based language model from `model_weights` a
 ```
 bash scripts/run_fit.sh 100000 50000 2600
 ```
-While we recommend using a GPU for these experiments, you can also select the CPU-only option and run certain experiments with fewer test samples:
+While we recommend using a GPU for these experiments, you can also select the CPU-only option and run specific experiments with fewer test samples:
 ```
 bash scripts/run_fit.sh 1000 5000 2600 --use-cpu
 ```
-This will greatly reduce the execution time on CPU and the results should still exhibit similar trends to our work.
+This will significantly reduce the execution time on the CPU, and the results should still exhibit similar trends to our work.
 
 #### Running IHOP
 Due to the long running times of IHOP on some experiments, we provide results from previous runs of the attack in the directories corresponding to each use case in `data` as `ihop_dlrm.pkl`, `ihop_dlrm_1_1.pkl`, `ihop_llm.pkl`, and `ihop_hnsw.pkl`. Reproducing this attack will save the results to the `eval` directory under each use case, and our plotting script will use the new results if they exist.
 
-If cloning from GitHub, please run the following from the root directory to fetch the IHOP code and patch it for our use cases. These steps should be skipped if the artifact is downloaded from Zenodo.
+If cloning from GitHub, please run the following command from the root directory to fetch the IHOP code and apply the necessary patches for our use cases. These steps should be skipped if the artifact is downloaded from Zenodo.
 ```
 git submodule init
 git submodule update
@@ -138,13 +138,13 @@ The commands to run each experiment are found in the following script:
 bash scripts/run_nb.sh
 ```
 #### Plotting
-After running our and compared attacks (IHOP optional), use the following python script to reproduce Figures 7 and 8 in the paper:
+After running our and compared attacks (IHOP optional), use the following Python script to reproduce Figures 7 and 8 in the paper:
 ```
 python3 scripts/plot.py --file-ext .png --data-dir data --plot-dir plots --fig 7
 python3 scripts/plot.py --file-ext .png --data-dir data --plot-dir plots --fig 8
 ```
 ### Practical Considerations
-This section reproduces the sensitivity analysis of our attack given various error rates, requiring 5 runs for each evaluated use case. The breakdown of estimated times is shown below.
+This section focuses on reproducing the sensitivity analysis of our attack for various error rates, requiring five runs for each evaluated use case. The breakdown of estimated times is shown below.
 
 | Use Case          | FIT (GPU)  | FIT (CPU) | 
 |-------------------|----------|------------|
